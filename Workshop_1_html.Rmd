@@ -1,0 +1,291 @@
+---
+title: "Workshop 1 - Introduction to R"
+output:
+  html_document:
+    theme: cerulean
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Downloading & Preparing R and RStudio{.tabset}
+This first workshop aims to introduce you to R and RStudio.  R is the programming language; RStudio is the IDE (Integrated Development Environment) that makes R easier to use. You must first download R and then Download RStudio (R is a requirement for RStudio to work).
+
+To get started, click on the tab below entitled "Installing R and RStudio"
+
+### Installing R and RStudio
+**1. Installing R and RStudio on a University computer:**
+<br>
+Go to AppsAnywhere and load RStudio (R will install automatically).
+
+- You will need to do this each time you use a university computer
+
+<br>
+**2. To download R and RStudio to your own laptop:**
+<br>
+
+Go to [RStudio (click on this link)](https://posit.co/download/rstudio-desktop/)
+
+- Download and install R
+  - Select the version for your computer (mac or Windows)
+  - Click on the first link for *R-(followed by the latest version number).pkg* to download the installation package
+    - For mac users, note which type of Mac you have: Intel or silicon (M1-3).  You can find out by clicking on the apple symbol in the top left of your screen and select 'About this mac'.
+  - Follow the installation instructions
+  
+- Download and install RStudio
+
+*Note*: R updates quite regularly, and so it is a good idea to check the latest version of R from time to time.  To update, simply repeat the instructions above to install the latest version of R.
+You will need to re-install packages to R that you had previously used: just use *install.packages("package name")* in R
+
+### RStudio looks like this
+```{r, RStudio_png, out.width="150%", echo = F}
+knitr::include_graphics("RStudio.png")
+```
+
+<br>Click on the green '+' symbol at the top left of the screen and select 'R Script'. You will now see 4 areas of the RStudio page:<br>
+<br>1. The **Code Editor** at the top left area where you will do most of your work and store your code.  Here you can write R code and notes to yourself. You can also save the R code and notes in an .R file<br>
+<br>2. The area below it (bottom left) is the **R Console**, and is essentially like R without RStudio.  It is where the R code that you type in the Editor above and its output appears when you run the code.<br>
+<br>3. Top right is the **Workspace environment** where you can see opened objects and data.<br>
+<br>4. At the bottom right is the the **File Directory** and where you can also see installed packages.  Use the Files tab to select the folder in which you wish to save your work
+
+- Click on the More cog and select 'Set as Working Directory'. This is now your default working folder.
+
+
+### Setting up RStudio
+**1. First create a folder in OneDrive (on the cloud or by using your Windows or Mac File Explorer) where you want to save your work for this module**
+
+- Locate your *OneDrive* folder:
+  - Create a new folder entitled *LS5022* in which you can save all work on this module (if you have not done so already).  In the LS5022 folder, create a folder entitled *Statistics*
+<br><br>
+
+**2. In RStudio, locate this folder in the file directory and set this as your working directory:**
+
+**a) For University computers:**<br>
+Locate your OneDrive by typing:<br> `setwd("O:/")`.<br>
+Then click the 'More' cog icon and select *Go to working directory* and find your folder (*LS5022/Statistics*) - set that as your final working directory by clicking on the 'More' cog icon again and select *set as working directory*.
+<br>
+<br>
+
+You will probably have to do this every time you use a University computer.<br>
+<br>
+**b) Using your own laptop:**<br>
+When you first use RStudio, you can set Global default settings which will be stored for when you next use RStudio.
+<br><br>
+Change global settings to your preferences: font, wrapping of text, default working directory etc**
+
+- Go to **Tools > Global Options...**
+
+  - In **Appearance**, select font etc.
+
+  - In **General**, set the default working directory by browsing to locate your *LS5022/Statistics* folder in OneDrive).<br>
+  Ensuring that '*Restore most recently opened project at startup*' and '*Restore previously open source documents at startup*' are ticked means that what you did last time will open.  This can be a useful place to start each time you use RStudio.
+ 
+  - Select **Code** and then select '*Use native pipe operator*' and also select '*soft-wrap R source files*'
+<br>
+Click on *Apply* and then *OK* and close the Global Options box.<br>
+<br>
+
+These settings will be saved on your laptop version of RStudio and your default working directory will be the *LS5022/Statistics* folder on your OneDrive.<br>
+*NB* If you update RStudio with a new version in the future, you will have to re-set these again.
+<br><br>
+
+Check your working directory:
+```{r, check_wd, echo = TRUE}
+getwd()
+```
+<br>
+<br>
+**3. To start an R session, open an R Script using the green '+' sign at the top left of RStudio**
+
+You are now ready to do some statistics.
+
+In the next tabs, you will do some simple calculations in R, import an Excel file to R and carry out an independent samples t-test on the data. The code will also generate a bar chart.
+
+This is just an example of how it works, and we will go through this slowly in later sessions so that you can do this yourself.<br><br>
+
+### Some simple things!
+The first thing I want to do is to load some packages that enhance R for what we are about to do. R has a base language, but packages significantly enhance and add power to what R can do.<br><br>
+You will need to install the following packages for today:<br>
+`install.packages("tidyverse")`<br>
+`install.packages("psych")`<br>
+`install.packages("rio")`<br>
+`install.packages("rstatix")`<br>
+`install.packages("ggthemes")`<br>
+<br>
+If you are using your own laptop, these packages will be saved in your laptop version of RStudio (although you will need to re-install them if you upgrade to a new version of RStudio in the future).<br>
+<br>
+If you are using a university computer. you will need to install the packages you want to use each time. 
+<br>
+Once packages are installed you call them by using the library() function:<br>
+```{r, packages, echo = TRUE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(psych)
+library(rio)
+library(rstatix)
+library(ggplot2)
+library(ggthemes)
+```
+*NB* If R ever says that a package does not exist, it means you need to install it before loading it with library().<br><br>
+If you want to check what packages are installed, the File Directory window has a tab called 'Packages'.  Installed packages are listed.  Packages that have been loaded have a tick by them.
+<br>
+<br>
+1. To create an object called 'greeting' with text
+```{r, hello, echo = TRUE}
+greeting <- "Hello World"
+greeting
+```
+<br>
+2. Some basic arithmetic!  The calculation is stored in an object called 'add'
+```{r, add, echo = TRUE}
+add <- 2+4
+add
+```
+
+Division!
+```{r, div, echo = TRUE}
+div <- 6/2
+div
+```
+<br>
+3. Create a vector and store in an object called vector1
+```{r, vector, echo = TRUE}
+vector1 <- c(2,4,5,6,7,8,10,11,14,15,21,25,34,35)
+vector1
+```
+<br>
+4. Calculate mean and standard deviation
+```{r, mean, echo = TRUE}
+mean1 <- mean(vector1)
+mean1
+
+sd1 <- sd(vector1)
+sd1
+```
+<br>
+5. Get descriptive statistics of the vector data
+```{r, descr, echo = TRUE}
+vector1 |>
+  describe()
+```
+<br>
+Here, mean(), sd() and describe() are called **functions**. All functions are followed by () where arguments can be placed to specify what action is to be performed. We load particular packages to make use of their functions than enhance R.<br>
+
+### Import Excel file
+**1. Import an Excel file (in 'tidy' format)**
+
+- Download the file called *2-sample_cholesterol.xlsx* from Canvas and save it to your LS5022 folder in your OneDrive.
+
+- In RStudio, locate the file in the file directory and set this as your working directory by clicking on the cog icon.<br>
+
+```{r, RStudio_settings.png, out.width = "50%", echo = F}
+knitr::include_graphics("RStudio_settings.png")
+```
+<br>
+<br>
+
+- Now import the xlsx file and store it as a dataframe called *chol_df*
+<br>This code uses the rio package to use the import() function.
+<br>It loads the Excel file and stores the data in a data frame object called '*chol_df*'<br>
+
+```{r, file_import, echo = TRUE}
+chol_df <- import("2-sample_cholesterol.xlsx")
+class(chol_df)
+```
+*NOTE*: this is saved as a data frame.  This is the type of object that we will be working with.
+
+<br>**2. Save the chol_df object as an RData file in your desired folder**
+<br>(*NB* This code will save the file to wherever your current working directory is set).  
+
+This means the data frame is saved and you don't have to import it every time you open RStudio!
+Just type in R (or just copy and paste the script):
+
+```{r save_RData, echo = TRUE, results = FALSE, message = FALSE}
+save(chol_df, file="chol_df.RData")
+```
+
+<br>To open the RData file in future, simply type
+
+```{r load_RData, echo = TRUE, results = FALSE}
+load(file = "chol_df.RData")
+```
+
+<br>**3. Finally, save this R file by clicking on the Save icon in RStudio**.<br>It will save to your working directory.
+
+### Statistics!
+**1. This code can be used to do an independent samples t-test on the cholesterol data**<br>
+(a) First let's take a quick look at the first few lines of the dataframe:
+```{r viewframe, echo = TRUE}
+head(chol_df)
+```
+
+and then we'll check the types of data of the variables
+```{r chol_types, echo = TRUE}
+chol_df |>
+summarise_all(class)
+```
+
+We can see that the Group data is numeric data.  We want it to be a factor (or category), so you can use the following script to change ('mutate') the Group variable from numeric to factor:
+```{r, factor, echo = TRUE}
+chol_df <- chol_df |>
+  mutate(Group=as.factor(Group))
+```
+<br><br>
+(b) test for normality with shapiro-wilk test:
+```{r, shapiro, echo = TRUE}
+chol_df |>
+  group_by(Group) |>
+    shapiro_test(Cholesterol)
+```
+<br>
+(c) Homogeneity of variance test:
+```{r, homog, echo = TRUE}
+chol_df |>
+  levene_test(Cholesterol ~ Group)
+```
+<br>
+(d) Independent samples t-test
+```{r, t_test, echo = TRUE}
+t_test_chol <- chol_df |>
+  t_test(Cholesterol ~ Group, paired = FALSE, var.equal = TRUE) 
+t_test_chol
+```
+<br>
+(e) Effect size
+```{r, effect, echo = TRUE}
+chol_df |>
+  cohens_d(Cholesterol ~ Group, paired = FALSE, var.equal = TRUE, hedges.correction=FALSE)
+```
+If hedges.correction = TRUE, it gives hedge's g instead of cohen's d effect size
+<br><br>
+(f) Post-hoc power analysis
+```{r, power, echo = TRUE, message=FALSE, warning=FALSE}
+library(pwr)
+pwr.t.test(n=20, d = 1.05, sig.level = 0.05, power = NULL)
+```
+
+<br>
+<br>**2. You can also create plots from the data; for example, this bar chart summarises the cholesterol data:**<br>
+<br>
+First, calculate mean and SD for each group, and save in a new object called 'chol1'.<br>
+This groups the cholesterol data by Group, and then calculates the mean and SD using the summarise() function and the mean() and SD() functions within it:
+```{r bar_stats, echo=TRUE}
+chol1 <- chol_df|>
+  group_by(Group) |>
+  summarise(mean_Chol = mean(Cholesterol),
+            sd_Chol = sd(Cholesterol))
+chol1
+```
+<br>
+Then do the bar chart using the summary statistics in 'chol1':
+```{r bar_chart, echo = TRUE}
+chol1 |>  
+ggplot() +
+  geom_col(aes(x=Group, y=mean_Chol), fill = "lightblue", colour  = "black") + 
+  geom_errorbar( aes(x=Group, ymin=mean_Chol-sd_Chol, ymax=mean_Chol+sd_Chol), width=0.2, colour="black", alpha=0.7, linewidth=0.7) +
+  labs(title = "Mean Cholesterol in Groups 1 and 2",
+       y= "Mean Cholesterol level") +
+  theme_classic()
+```
+
+
