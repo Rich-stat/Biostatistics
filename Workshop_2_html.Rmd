@@ -1,0 +1,200 @@
+---
+title: "Workshop 2 - Importing files to RStudio"
+output:
+  html_document:
+    fig_width: 7
+    fig_height: 6
+    theme: cerulean
+    css: styles.css
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(knitr)
+library(psych)
+```
+## Importing 'tidy' data to RStudio{.tabset}
+This workshop is designed to get you started in importing Excel and csv spreadsheets to RStudio.  The first thing you should do is to ensure that your spreadsheet is arranged in a 'tidy' format.<br>
+
+We also need to load any packages into RStudio that we are going to use.<br>
+If you are using a university computer, you will need to install them first:
+<br><br>
+`install.packages("tidyverse")`<br>
+`install.packages("psych")`<br>
+`install.packages("rio")`<br>
+<br>and then load them
+
+```{r, packages, echo = TRUE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(psych)
+library(rio)
+```
+
+
+Click on the tab 'Tidy Data' below to get started.
+
+### Tidy data
+In Excel, make sure your data is 'tidy' before trying to import it to RStudio:
+```{r, Tidy_data.png, out.width="150%", echo = F}
+knitr::include_graphics("Tidy_data.png")
+```
+
+<br>**TASK**:<br>
+
+1. Go to Canvas and download the file '*HornedLizards_unstacked.csv*'.<br>
+2. Open the file in Excel and arrange the data to make it tidy in preparation for importing it to RStudio.<br>
+3. Save the tidy file in a known location on your OneDrive and call it **HornedLizards.csv**.<br>
+<br>
+
+*Background*: Horned lizards have spikes around the head.<br>
+A study investigated whether or not the spikes protected lizards against predation by shrikes – birds that skewer its victims on thorns to save for eating later.<br>
+
+They measured (a) length of horns on lizards skewered on spikes and (b) length of horns on lizards that were alive.<br>
+
+```{r, Horned_lizard.png, out.width="75%", echo = F}
+knitr::include_graphics("Horned_lizard.png")
+```
+
+### Importing excel and csv files to RStudio<br>
+Once you have prepared your *xlsx* or *csv* file for importing, you can import the file to RStudio.
+<br><br>
+1. First, in RStudio go to the folder where your excel or csv file is located on OneDrive.<br>
+If you are using a University computer you can locate OneDrive by typing:<br> `setwd("O:/")`.<br>
+<br>Then click the 'More' cog icon and select 'Go to working directory' and find your folder.<br>
+Finally, click on the cog symbol again and set this folder location as your working directory:
+
+```{r, RStudio_settings.png, out.width = "50%", echo = F}
+knitr::include_graphics("RStudio_settings.png")
+```
+<br>
+
+<br>2. Import the tidy 'HornedLizards.csv' file that you have created.<br>The easiest way to import spreadsheets is to use the import() function from the *rio* package (use *install.packages("rio")* if it is not already installed in your RStudio):
+<br>
+```{r import, echo = TRUE, warning=FALSE}
+HornedLizard <- import('HornedLizards.csv')
+```
+Here, the csv file has been imported and stored in an object called 'HornedLizard'. This object is a dataframe.
+<br>
+<br>
+Use the head() function to see the 1st 6 rows of the dataframe:
+```{r head, echo = TRUE}
+head(HornedLizard)
+```
+<br>
+You can view the entire dataframe in RStudio with:<br>
+```{r view, echo = TRUE, results = FALSE}
+view(HornedLizard)
+```
+<br>
+and you can see summary data (using the summary() function)
+```{r summary, echo = TRUE}
+summary(HornedLizard)
+```
+<br>
+and we can see the data types of the variables here:
+```{r type, echo = TRUE}
+HornedLizard |>
+  summarise_all(class)
+```
+
+### Dealing with missing values
+Missing values are imported as 'NA' in R.
+
+You can see how many missing values are in any column with:
+
+```{r wrangling, echo = TRUE}
+HornedLizard |>
+  summarise(count = sum(is.na(squamosalHornLength)))
+```
+
+This code counts how many NAs appear in cells in the squamosalHornLength column in the dataframe.
+
+You can see that there is one row with missing measurements.
+
+<br>You can view this row alone with the filter() function:
+
+```{r filter, echo = TRUE}
+HornedLizard |>
+  filter(is.na(squamosalHornLength))
+```
+<br>
+and you can remove this row with:
+```{r filter_out, echo = TRUE}
+HornedLizard <- HornedLizard |>
+  filter(!is.na(squamosalHornLength))
+```
+
+**NB**  I have over-written the dataframe by storing this result without the NA values in the same dataframe name
+
+**NB2**  The following code will do the same thing:<br>
+`HornedLizard |>` <br>
+`drop_na(squamosalHornLength)`<br>
+(removing all rows with NA in the *squamosalHornLength* column)
+
+### Types of data in R
+Data can be numeric, integer, character or factor.  R attempts to identify the type when you import data:
+
+- **Numeric** (with decimal places - shown as 'dbl') and **integer** are numeric data (dbl or int)
+
+- **Character** is text (chr)
+
+- **Factors** are when characters or numbers are used to identify categories or groups (fct)
+
+<br>We can see what the data types are:
+```{r glimpse, echo = TRUE}
+HornedLizard |>
+  summarise_all(class)
+```
+
+Survival has been stored as character data.  
+
+<br>However, these are categories ('living' or 'killed').
+So, we want to convert the character column, Survival, to factor, and save as an updated dataframe ('HL_revised'):
+```{r factor_convert, echo = TRUE}
+HL_revised <- HornedLizard |>
+  mutate(Survival = as.factor(Survival))
+
+HL_revised |>
+  summarise_all(class)
+```
+
+<br>If the squamosalHornLength variable column had been imported as character (text), and we wanted to change it to numeric or integer data, we would use:
+
+`HL_revised <- HornedLizard |>`<br>
+  `mutate(squamosalHornLength = as.numeric(squamosalHornLength))`
+  
+  or
+  
+`HL_revised <- HornedLizard |>`<br>
+  `mutate(squamosalHornLength = as.integer(squamosalHornLength))`  
+
+  
+<br><br>FINALLY, now that the dataframe is cleaned and ready, save it as an *RData* file.
+
+This means that you do not have to import the csv file and clean it up all over again!  You can just upload the *RData* file which will provide the saved dataframe.
+```{r save_RData, echo = TRUE}
+save(HL_revised, file = "HL_revised.RData")
+```
+
+This saves the RData file in your working directory.<br><br>
+To open the dataframe in future, either click on the *RData* file in the folders tab in RStudio or:<br>
+`load(file = "HL_revised.RData")`<br>
+
+(assuming you have set this as your working directory again)
+
+
+**Our data is now ready for analysis!**<br><br>
+
+### Further information
+
+1. You can watch a short video in which I carry out the commands referred to in these notes in RStudio.<br>
+You can watch the video from Canvas [by clicking here](https://canvas.kingston.ac.uk/courses/30443/pages/session-2-importing-files-to-rstudio)
+<br><br>
+
+2. All of this and so much more is freely available in an on-line book called:<br>
+**R for Data Science** which can be found at:<br><br>
+[R for Data Science (click on this link)](https://r4ds.hadley.nz/)<br><br>
+This is a great reference source for using R to manage data.  It also contains 3 chapters on creating graphic visualisations using the package ggplot2 which we will be using in later sessions.<br>
+It does not, however, include how to carry out statistical analyses.

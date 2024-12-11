@@ -1,0 +1,333 @@
+---
+title: "Workshop 4"
+author: "Richard Cook"
+output:
+  word_document: default
+  css: style.css
+  df_print: knitr::kable
+  html_document: null
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(knitr)
+```
+
+## Analysing Categorical Data{.tabset}
+This workshop introduces you to analysing:<br>
+
+- **Chi-square goodness of fit test**: to test of observed frequencies match expected frequencies or proportions<br>
+- **Contingency analysis for independent data**: to assess if one set of categorical variables is associated with another independent categorical variable<br>
+- **Contingency analysis for related/paired data**: to assess if one set of categorical variables is associated with another related categorical variable<br>
+
+First, open RStudio and a new R Script file.  Load the packages that you will be using:
+
+```{r packages, echo = TRUE, message = FALSE, warning = FALSE}
+library(tidyverse)
+library(rio)
+library(knitr)
+library(epitools)
+library(rstatix)
+```
+
+<br>**SELECT THE RELEVANT TAB BELOW FOR YOUR DATA**
+
+### **GOODNESS OF FIT**
+This example analyzes if observed frequencies of combinations of pea phenotypes (wround/wrinkled shape and green/yellow colour) match what we would expect from a dihybrid cross if the two genes controlling shape and colour are on different chromosomes (independent assortment).
+
+<br>
+**1. Download the Excel file *'chi-sq goodness of fit.xlsx'* from Canvas and save it to a folder that you will use as your working directory.**
+
+In RStudio, locate the file and set that location as your working directory.
+
+<br>
+**2. Import the file to RStudio and store it as a dataframe called *mendel*.**<br>
+The head() function shows us the first 6 rows (NB there are only 4 rows in this dataframe).<br>
+The summarise_all(class) function shows us what type of data is stored in the dataframe. 
+
+```{r import.good, echo = TRUE}
+mendel <- import("chi-sq goodness of fit.xlsx")
+head(mendel) |>
+  kable(align = 'l')
+mendel |>
+summarise_all(class)
+```
+<br>
+The Phenotype has been imported as character data.  We need to convert it to a factor variable:
+```{r phen-factor, echo = TRUE}
+mendel <- mendel |>
+  mutate(Phenotype = as.factor(Phenotype))
+mendel |>
+  summarise_all(class)
+```
+<br>
+<br>
+**3. The goodness of fit test**<br>
+To compare the observed frequencies with the expected ratio of 9:3:3:1
+```{r chi.mendel, echo = TRUE}
+chisq_test(mendel$Observed, p = c(9/16, 3/16, 3/16, 1/16)) |>  
+  kable()
+```
+*NB* If you have expected numbers instead of ratios, just put each actual number in instead of the ratio numbers
+<br>
+<br>
+
+**4. Get pairwise comparisons for each expected vs observed frequency:**
+```{r pair.mendel, echo = TRUE}
+pairwise_chisq_test_against_p(mendel$Observed, p = c(9, 3, 3, 1)/16, p.adjust.method = "bonferroni") |>
+  kable()
+```
+*NB* use the **adj p-value** to reduce chance of a type 1 error because there are multiple comparisons here.<br>
+So, there are no significant differences (despite the overall P-value of 0.024)
+<br>
+<br>
+
+**5. Effect size: Cramer's V**
+```{r effsize.mendel, echo = TRUE}
+mendel |>
+  select(Observed, Expected) |>
+  cramer_v()
+```
+
+Cramer's V ranges from 0 (no association between factors) to 1 (complete association):<br>
+
+- Cramer's V > 0.05 indicates a weak effect or difference<br>
+- Cramer's V > 0.1 indicates moderate effect or difference<br>
+- Cramer's V > 0.25 indicates a strong effect or difference<br>
+<br>
+<br>
+
+**6. Barplot**<br>
+a. Create a new dataframe that is long or 'tidy' first and call the new dataframe mendel.long
+```{r tidy.mendel, echo = TRUE}
+mendel.long <- mendel |>
+  gather(key=Obs_Exp, value=Counts, Observed, Expected)  
+# key = new col with Observed or Expected
+# value  = new column with the counts in
+```
+You can see what this looks like with
+```{r mend.long, echo = TRUE}
+head(mendel.long) |>
+  kable()
+```
+<br>
+b. Make the new Obs_Exp variable as a factor
+```{r obs.factor, echo = TRUE}
+mendel.long <- mendel.long |>
+  mutate(Obs_Exp = as.factor(Obs_Exp))
+```
+<br>
+c. Re-order the factor levels Observed and Expected in Obs_Exp to make sure Observed appears on the left in the boxplot (and not in alphabetical order)<br>
+Also re-order the Phenotypes to stop them appearing in alphabetic order.
+```{r mendel.long.fct, echo = TRUE}
+mendel.long$Obs_Exp <- fct_relevel(mendel.long$Obs_Exp, "Observed", "Expected")
+mendel.long$Phenotype <- fct_relevel(mendel.long$Phenotype, "Round.Green", "Wrinkled.Green", "Round.Yellow", "Wrinkled.Yellow")
+```
+<br>
+d. The bar plot
+```{r mendel.bar, echo = TRUE}
+mendel.long |> 
+  ggplot(aes(x = Phenotype, y = Counts, fill = Obs_Exp)) +
+  geom_col(position = "dodge", colour = "black") + 
+  scale_fill_grey() +
+  labs(title = "Bar plot of Observed and Expected Counts of Pea Plants")
+```
+<br>
+<br>
+**7. Save the dataframes**<br>
+Save the mendel and mendel.long dataframes as RData files so that you can use them again in RStudio without having to import the xlsx files and change them again:
+```{r mendel.RData, echo = TRUE}
+save(mendel, file="mendel.RData")
+save(mendel.long, file = "mendel_long.RData")
+```
+
+
+### **CONTINGENCY ANALYSIS - INDEPENDENT DATA**
+This example assesses if there is a relationship between one categorical variable, namely mortality (surviving or dying) on the RMS Titanic, and another categorical variable of gender.  In other words, was survival linked to the gender of the people on the ship?
+
+<br>
+**1. Download the Excel file *titanic table data.xlsx* from Canvas and save it to a folder that you will use as your working directory.**
+
+In RStudio, locate the file and set that location as your working directory.
+
+<br>
+**2. Import the file to RStudio and store it as a dataframe called *titanic*.**<br>
+```{r titanic.import, echo = TRUE}
+titanic <- import("titanic table data.xlsx")
+```
+<br>
+Check the dataframe<br>
+
+- head() returns the first 6 rows.<br>
+- summarise_all(class) shows us the types of data of each variable.
+
+```{r tit.str, echo = TRUE}
+head(titanic) |>
+  kable(align = 'l')
+
+titanic |>
+  summarise_all(class)
+```
+<br>
+It shows that Survival and Gender are character variables.  We want them to be factors:
+```{r tit.factor, echo = TRUE}
+titanic <- titanic |>
+  mutate(Survival = as.factor(Survival),
+         Gender = as.factor(Gender))
+```
+<br>
+Set the order of the Gender levels with male appearing first (it just makes the next plot look better!)
+```{r gender.order, echo = TRUE}
+titanic$Gender <- fct_relevel(titanic$Gender, "Male", "Female")
+```
+<br>
+**3. Save this dataframe as an RData file** in case you want to use it again without having to import the xlsx file again and formatting it.
+```{r tit.RData, echo = TRUE}
+save(titanic, file = "titanic.RData")
+```
+<br>
+<br>
+**4. Create a contingency table:**
+```{r tit.conTab, echo = TRUE}
+titanConTab <- xtabs(Count ~ Survival + Gender, data = titanic)
+titanConTab |>
+  kable(align = 'l')
+```
+<br>
+<br>
+**5. Create a mosaic plot**<br>
+This is a nice way to visualise a contingency table.
+```{r tit.mosaic, echo = TRUE}
+par(pty = "s")        # makes a square plot
+mosaicplot(t(titanConTab), col = c("firebrick", "goldenrod1"), cex.axis = 1, 
+           xlab = "Gender", ylab = "Mortality", main = "Mosaic Plot of Titanic Data")
+```
+<br>
+<br>
+**6. The chi-square contingency analysis**
+```{r tit.cont1, echo = TRUE}
+titanChiSq <- titanConTab |>
+  chisq.test(correct = FALSE)
+titanChiSq
+```
+P<<0.001, so there is a highly statistically  significant association between gender and mortality.<br>
+<br>
+To see the observed (actual) counts:
+```{r tit.cont2, echo = TRUE}
+titanChiSq$observed
+```
+<br>
+To see the expected counts if the NH is true (*ie*, expected frequencies are those that one would expect if there was no influence of gender on survival.)
+```{r tit.cont3, echo = TRUE}
+titanChiSq$expected
+```
+<br>
+To see the standardised residuals
+```{r tit.cont4, echo = TRUE}
+titanChiSq$residuals
+```
+<br>
+Standardised residuals: if a value is more negative than -1.96 or higher than +1.96 for a category, there is a statistically significant difference between the observed and expected frequencies for that category.<br>
+<br>
+
+*NB* If any of the expected values are 5 or less, it is better to use **Fisher's exact test**.<br>
+If that is the case, use the following code instead of the chi-square code above:
+```{r tit.fisher, echo = TRUE}
+titanicFish <- titanConTab |>
+  fisher.test()
+titanicFish 
+```
+<br>
+<br>
+**7. Calculate effect size**<br>
+**(a)** For 2x2 contingency tables use the **odds ratio**.
+```{r tit.odds, echo = TRUE}
+titanicOR <- oddsratio(titanConTab, method = "wald")
+odds.Ratio <- titanicOR$measure[2, ] 
+odds.Ratio |>
+  kable(align = 'l')
+```
+
+Odds ratio = 11.4. The odds of dying for men were 11.4 times greater than for women.  
+<br>
+<br>
+**(b)** For contingency tables bigger than 2x2, *eg* a 3x2 or 3x3 table, use **Cramer's V** effect size.<br>
+The r script for that in this case would be:<br>
+
+`titanConTab |>`<br>
+  `cramer_v()`<br>
+<br>
+Cramer's V ranges from 0 (no association between factors) to 1 (complete association):<br>
+
+- Cramer's V > 0.05 indicates a weak association<br>
+- Cramer's V > 0.1 indicates moderate association<br>
+- Cramer's V > 0.25 indicates a strong association<br>
+<br>
+
+
+
+
+### **CONTINGENCY ANALYSIS - RELATED DATA**
+This example analyses if an intervention can change the behaviour of participants in the study. 31 people who used electronic cigarettes ('vapers') and 31 people who did not use electronic cigarettes ('non-vapers') were shown a video to show the harmful effects of vaping.  After 6 months, each person was asked if they used electronic cigarettes.  Consequently, each participant was 'measured' twice; once before the video and once after.  The 'before' and 'after' measurements are therefore related because they come from the same person.
+
+<br>
+**1. Download the Excel file *mcnemar data.xlsx * from Canvas and save it to a folder that you will use as your working directory.**
+
+In RStudio, locate the file and set that location as your working directory.
+
+<br>
+**2. Import the file to RStudio and store it as a dataframe called *smoke*.**<br>
+
+```{r smoke.str, echo = TRUE}
+# Import the data to a dataframe:
+smoke <- import("mcnemar data.xlsx")
+```
+<br>**3. Examine the data**<br>
+
+- The head() function shows us the first 6 rows so we can check the arrangement of the data.<br>
+- The summarise_all(class) function shows us what type of data is stored in the dataframe.<br>
+
+```{r smoke.ex, echo = TRUE}
+# View the 1st 6 rows of the dataframe:
+smoke |>
+  head() |>
+  kable(align = 'l')
+
+# Check the data types in each column:
+smoke |>
+  summarise_all(class)
+```
+We can see that the Before and After variables have been imported as 'character' data.  <br>
+We need to convert these to factors:
+```{r smoke.factors, echo = TRUE}
+smoke <- smoke |>
+  mutate(Before = as.factor(Before),
+         After = as.factor(After))
+         
+smoke |>
+  summarise_all(class)
+```
+<br><br>
+**4. We can now create a contingency table called '*smokeConTab*'**<br>
+```{r smokeCT, echo = TRUE}
+smokeConTab <- xtabs(Count ~ Before + After, data = smoke)
+smokeConTab
+```
+<br>We can also create a mosaic plot to visualise the contingency table data:
+```{r smokeCT.mosaic, echo = TRUE}
+par(pty = "s")        # makes a square plot
+mosaicplot(t(smokeConTab), col = c("lightgreen", "gold"), cex.axis = 1, 
+           xlab = "After", ylab = "Before", main = "Mosaic Plot of Vaping Data")
+```
+<br>
+**5. The McNemar test**
+```{r mcnemar, echo = TRUE}
+mcnemar_test(smokeConTab) |>
+  kable()
+```
+P = 0.007, so there is a statistically significant association. Vapers and non-vapers responded to intervention differently; in other words, the response to the video was associated with their vaping status at the start.<br>
+
+- Of 31 non-vapers at the start, most (25) were still non-vapers 6 months after intervention; only 6 changed their habit<br>
+- Of 31 vapers at the start, most (21) changed to become non-vapers after 6 months, and only 10 remained vapers<br>
+<br>
+<br>
